@@ -18,6 +18,36 @@ int aleatorio (int min, int max){
 }
 
 
+double obtenerTiempoActual (){
+	struct timespec tsp;
+	clock_gettime (CLOCK_REALTIME, &tsp);
+	double secs= (double)tsp.tv_sec;
+	double nano= (double)tsp.tv_nsec / 1000000000.0;
+	return secs +nano;
+}
+
+//se llena el array de un conjunto de valores aleatorios 
+void generarNumerosArreglos(long *arreglos,int num_arreglos){
+	int i=0;
+	for(i=0;i<num_arreglos;i++){
+		arreglos[i] = aleatorio(1,200);
+	}
+}
+
+//suma un bloque especifico del arreglo
+void * sumas(void *arg){
+	estructura *argumentos = (estructura *)arg;		//convertimos al tipo de dato correcto
+	//printf(" valores : inicio %d cant %d \n",argumentos->inicio,argumentos->cant );
+	int i = 0;
+	long suma=0;
+	int max=argumentos->cant+argumentos->inicio;
+	for(i = argumentos->inicio; i < max; i++){
+		suma=suma+(argumentos->arreglos)[i];
+		//printf(" %d %ld %ld\n",i, (argumentos->arreglos)[i],suma );
+	}
+	return (void *)suma;
+}
+
 
 int main(int argc, char *argv[]){
 	if(argc==3){
