@@ -17,7 +17,6 @@ int aleatorio (int min, int max){
 	return (rand() % (max - min +1)) + min;
 }
 
-
 double obtenerTiempoActual (){
 	struct timespec tsp;
 	clock_gettime (CLOCK_REALTIME, &tsp);
@@ -48,7 +47,6 @@ void * sumas(void *arg){
 	return (void *)suma;
 }
 
-
 int main(int argc, char *argv[]){
 	if(argc==3){
 		double ti=obtenerTiempoActual();
@@ -71,10 +69,45 @@ int main(int argc, char *argv[]){
 			tamanobloque=numeroelementos/numerohilos;
 			residuo=numeroelementos%numerohilos;
 		}
+		tamanobloque=numeroelementos/numerohilos;
+		for(hilo=0;hilo<numerohilos;hilo++) {
+			printf("Creando thread :%d\n", hilo);
+			estructura *mi_argumento_estructura = malloc(sizeof(estructura));
+			mi_argumento_estructura->inicio  = inicio ;
+			if(hilo==(numerohilos-1)){
+				mi_argumento_estructura->cant  = tamanobloque +residuo;
+			}else{
+				mi_argumento_estructura->cant  = tamanobloque ;
+			}
+			mi_argumento_estructura->arreglos = arreglos;
+			
+			status = pthread_create(&hilos[hilo], NULL,sumas, (void *)mi_argumento_estructura);
+			if(status < 0){
+				fprintf(stderr, "Error al crear el hilo : %d\n", hilo);
+				exit(-1);	
+			}
+			inicio+=tamanobloque;	
+		}
 
+		//esperando la finalizacion de los hilos
+		printf("Hilo principal esta esperando a que terminen los otros hilos\n");
+		for(hilo=0;hilo<numerohilos;hilo++) {
+			valor_retorno=0;
+			int status1 = pthread_join(hilos[hilo], &valor_retorno);
+			if(status1 < 0){
+				fprintf(stderr, "Error al esperar por el hilo 1\n");
+				exit(-1);
+			}
+			printf("Suma parcial hilo %d: %ld\n", hilo, (long)valor_retorno);
+			suma=suma+(long)valor_retorno;
+		}	
+		printf("Suma total: %ld\n", suma);
+		double tf=obtenerTiempoActual()-ti;
+		printf("tiempo de ejecucion: %f \n", tf);
 	}else{
 		printf("por favor ingrese correctamente los parametros: \n 1. numero de elementos \n 2. numeros de hilos");
 	}
 		pthread_exit(NULL);
 }
+//a menor hilos mas rapido???
 
