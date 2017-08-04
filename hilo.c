@@ -9,7 +9,7 @@
 typedef struct mi_estructuraTDA{
 	int inicio;
 	int cant;
-	long *arreglos;
+	int *arreglos;
 } estructura;
 
 //genera numeros enteros aleatorios entre max y min 
@@ -26,10 +26,10 @@ double obtenerTiempoActual (){
 }
 
 //se llena el array de un conjunto de valores aleatorios 
-void generarNumerosArreglos(long *arreglos,int num_arreglos){
+void generarNumerosArreglos(int *arreglos,int num_arreglos){
 	int i=0;
 	for(i=0;i<num_arreglos;i++){
-		arreglos[i] = aleatorio(1,200);
+		arreglos[i] = aleatorio(0,255);
 	}
 }
 
@@ -48,7 +48,74 @@ void * sumas(void *arg){
 }
 
 int main(int argc, char *argv[]){
-	if(argc==3){
+	if(argc==4){
+		double ti;
+		int numeroelementos=atoi(argv[1]);
+		int numerohilosini=atoi(argv[2]);
+		int numerohilosfin=atoi(argv[3]);
+		int tamanobloque;
+		int residuo=0;
+		void * valor_retorno;
+		srand(time(0));
+		long suma=0;
+
+		ti=obtenerTiempoActual();	
+	
+		int *arreglos=malloc(numeroelementos*sizeof(int));
+		memset(arreglos,0,numeroelementos*sizeof(int));
+		generarNumerosArreglos(arreglos,numeroelementos);
+		 
+		double tf=obtenerTiempoActual()-ti;
+		printf("tiempo en generar arreglo : %f \n", tf);
+		
+		
+		
+		for(int cant=numerohilosini; cant<=numerohilosfin; cant++){
+			ti=obtenerTiempoActual();
+			int numerohilos=cant;
+			pthread_t *hilos =malloc(numerohilos*sizeof(pthread_t));
+			int status, hilo,inicio=0;
+			//validar tamano de bloque
+			if(numeroelementos%numerohilos!=0){
+				tamanobloque=numeroelementos/numerohilos;
+				residuo=numeroelementos%numerohilos;
+			}
+			tamanobloque=numeroelementos/numerohilos;
+			for(hilo=0;hilo<numerohilos;hilo++) {
+				estructura *mi_argumento_estructura = malloc(sizeof(estructura));
+				mi_argumento_estructura->inicio  = inicio ;
+				if(hilo==(numerohilos-1)){
+					mi_argumento_estructura->cant  = tamanobloque +residuo;
+				}else{
+					mi_argumento_estructura->cant  = tamanobloque ;
+				}
+				mi_argumento_estructura->arreglos = arreglos;
+				
+				status = pthread_create(&hilos[hilo], NULL,sumas, (void *)mi_argumento_estructura);
+				if(status < 0){
+					fprintf(stderr, "Error al crear el hilo : %d\n", hilo);
+					exit(-1);	
+				}
+				inicio+=tamanobloque;	
+			}
+
+			//esperando la finalizacion de los hilos
+			for(hilo=0;hilo<numerohilos;hilo++) {
+				valor_retorno=0;
+				int status1 = pthread_join(hilos[hilo], &valor_retorno);
+				if(status1 < 0){
+					fprintf(stderr, "Error al esperar por el hilo 1\n");
+					exit(-1);
+				}
+				//printf("Suma parcial hilo %d: %ld\n", hilo, (long)valor_retorno);
+				suma=suma+(long)valor_retorno;
+			}	
+			printf("Suma total : %ld con %d hilos\n", suma, cant);
+			tf=obtenerTiempoActual()-ti;
+			printf("tiempo de ejecucion: %f con %d hilos \n", tf,cant);
+			suma=tf=ti=0;
+		}
+	}else if(argc==3){
 		double ti=obtenerTiempoActual();
 		int numeroelementos=atoi(argv[1]);
 		int numerohilos=atoi(argv[2]);
@@ -56,8 +123,8 @@ int main(int argc, char *argv[]){
 		int residuo=0;
 		void * valor_retorno;
 		srand(time(0));
-		long *arreglos=malloc(numeroelementos*sizeof(long));
-		memset(arreglos,0,numeroelementos*sizeof(long));
+		int *arreglos=malloc(numeroelementos*sizeof(int));
+		memset(arreglos,0,numeroelementos*sizeof(int));
 		long suma=0; 
 
 		pthread_t *hilos =malloc(numerohilos*sizeof(pthread_t));
@@ -71,7 +138,6 @@ int main(int argc, char *argv[]){
 		}
 		tamanobloque=numeroelementos/numerohilos;
 		for(hilo=0;hilo<numerohilos;hilo++) {
-			printf("Creando thread :%d\n", hilo);
 			estructura *mi_argumento_estructura = malloc(sizeof(estructura));
 			mi_argumento_estructura->inicio  = inicio ;
 			if(hilo==(numerohilos-1)){
@@ -109,5 +175,4 @@ int main(int argc, char *argv[]){
 	}
 		pthread_exit(NULL);
 }
-//a menor hilos mas rapido???
 
